@@ -1,0 +1,842 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ziad Shaaban — Videographer &amp; Video Editor</title>
+<meta name="description" content="Ziad Shaaban — Videographer &amp; Video Editor. I capture moments. I edit stories. I turn footage into experiences.">
+<meta name="theme-color" content="#0a0405">
+<link rel="preload" href="fonts/Anton-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/Inter-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+<script>
+document.documentElement.classList.add('has-js');
+/* Failsafe: never trap the visitor behind the preloader, even if script.js
+   fails to load or throws before the loader finishes. */
+setTimeout(function () {
+  var l = document.getElementById('loader');
+  if (!l || l.classList.contains('is-done')) return;
+  l.classList.add('is-done');
+  var f = document.getElementById('loaderFill');
+  if (f) f.style.width = '100%';
+  var n = document.getElementById('loaderNum');
+  if (n) n.textContent = '100';
+  var h = document.querySelector('.hero');
+  if (h) h.classList.add('is-ready');
+  if (!window.__ziadBooted) document.documentElement.classList.remove('has-js');
+}, 4000);
+</script>
+</head>
+<body>
+
+<!-- ============================================================
+     GLOBAL FILM OVERLAYS (grain, vignette, cursor, progress)
+============================================================ -->
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<div class="cursor" aria-hidden="true">
+  <span class="cursor__dot"></span>
+  <span class="cursor__ring"></span>
+  <span class="cursor__label"></span>
+</div>
+
+<div class="scrollbar" aria-hidden="true"><span class="scrollbar__fill"></span></div>
+<div class="timecode" id="timecode" aria-hidden="true">00:00:00:00</div>
+
+<!-- Preloader -->
+<div class="loader" id="loader">
+  <div class="loader__inner">
+    <div class="loader__mark">ZS</div>
+    <div class="loader__bar"><span id="loaderFill"></span></div>
+    <div class="loader__meta">
+      <span>LOADING REEL</span>
+      <span id="loaderNum">000</span>
+    </div>
+  </div>
+  <div class="loader__wipe"></div>
+</div>
+
+<!-- Cinematic section transition wipe -->
+<div class="wipe" id="wipe" aria-hidden="true"><span></span></div>
+
+<!-- ============================================================
+     NAVIGATION
+============================================================ -->
+<header class="nav" id="nav">
+  <a class="nav__logo" href="#home" data-nav data-cursor="hover">
+    <span class="nav__logo-mark">ZS</span>
+    <span class="nav__logo-name">ZIAD<br>SHAABAN</span>
+  </a>
+
+  <nav class="nav__menu" aria-label="Primary">
+    <ul class="nav__list">
+      <li><a href="#home" data-nav class="is-active">Home</a></li>
+      <li><a href="#about" data-nav>About</a></li>
+      <li><a href="#projects" data-nav>Projects</a></li>
+      <li><a href="#skills" data-nav>Skills</a></li>
+      <li><a href="#contact" data-nav>Contact</a></li>
+    </ul>
+    <span class="nav__indicator" aria-hidden="true"></span>
+  </nav>
+
+  <a class="nav__cta magnetic" href="#contact" data-nav data-cursor="hover">
+    <span>Start a project</span>
+  </a>
+
+  <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+    <span></span><span></span>
+  </button>
+</header>
+
+<!-- Mobile menu -->
+<div class="mmenu" id="mobileMenu" aria-hidden="true">
+  <div class="mmenu__bg"></div>
+  <nav class="mmenu__nav" aria-label="Mobile">
+    <a href="#home" data-nav><i>01</i>Home</a>
+    <a href="#about" data-nav><i>02</i>About</a>
+    <a href="#projects" data-nav><i>03</i>Projects</a>
+    <a href="#skills" data-nav><i>04</i>Skills</a>
+    <a href="#contact" data-nav><i>05</i>Contact</a>
+  </nav>
+  <div class="mmenu__foot">
+    <a href="tel:01021394706">01021394706</a>
+    <a href="https://wa.me/201018430937" target="_blank" rel="noopener">WhatsApp</a>
+  </div>
+</div>
+
+<main id="main">
+
+<!-- ============================================================
+     01 — HERO / VIRTUAL FILM STUDIO
+============================================================ -->
+<section class="hero" id="home">
+  <div class="hero__stage" aria-hidden="true">
+    <canvas id="scene" class="hero__canvas"></canvas>
+    <div class="hero__studio"></div>
+    <div class="hero__beams">
+      <span class="beam beam--1"></span>
+      <span class="beam beam--2"></span>
+      <span class="beam beam--3"></span>
+    </div>
+    <div class="hero__horizon"></div>
+  </div>
+
+  <!-- Camera HUD -->
+  <div class="hud" aria-hidden="true">
+    <span class="hud__rec"><i></i>REC</span>
+    <span class="hud__item hud__item--tl">A-CAM · 24 FPS</span>
+    <span class="hud__item hud__item--tr">f/1.8 · ISO 400</span>
+    <span class="hud__item hud__item--bl" id="hudTime">00:00:00:00</span>
+    <span class="hud__corner hud__corner--tl"></span>
+    <span class="hud__corner hud__corner--tr"></span>
+    <span class="hud__corner hud__corner--bl"></span>
+    <span class="hud__corner hud__corner--br"></span>
+  </div>
+
+  <div class="hero__content">
+    <p class="hero__eyebrow" data-hero="1">
+      <span class="dot"></span> Videographer &amp; Video Editor · 2 Years of Experience
+    </p>
+
+    <h1 class="hero__title">
+      <span class="line"><span class="line__in" data-hero="2">ZIAD</span></span>
+      <span class="line"><span class="line__in line__in--outline" data-hero="3">SHAABAN</span></span>
+    </h1>
+
+    <div class="hero__lower">
+      <p class="hero__role" data-hero="4">Videographer<br>&amp; Video Editor</p>
+      <p class="hero__statement" data-hero="5">I capture moments. I edit stories. <br>I turn footage into experiences.</p>
+      <div class="hero__actions" data-hero="6">
+        <a href="#projects" class="btn btn--solid magnetic" data-nav data-cursor="hover"><span>Explore my work</span></a>
+        <a href="#contact" class="btn btn--ghost magnetic" data-nav data-cursor="hover"><span>Contact me</span></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editing timeline strip -->
+  <div class="hero__timeline" aria-hidden="true">
+    <div class="tl__ruler" id="heroRuler"></div>
+    <div class="tl__tracks">
+      <div class="tl__track"><span class="tl__clip" style="--w:22%;--x:2%"></span><span class="tl__clip tl__clip--red" style="--w:14%;--x:26%"></span><span class="tl__clip" style="--w:31%;--x:42%"></span><span class="tl__clip" style="--w:18%;--x:75%"></span></div>
+      <div class="tl__track tl__track--audio">
+        <span class="tl__wave"></span>
+      </div>
+    </div>
+    <span class="tl__playhead" id="heroPlayhead"></span>
+  </div>
+
+  <a class="hero__scroll" href="#about" data-nav data-cursor="hover">
+    <span>Scroll</span>
+    <i></i>
+  </a>
+</section>
+
+<!-- ============================================================
+     MARQUEE BAND
+============================================================ -->
+<div class="marquee" data-marquee data-speed="1">
+  <div class="marquee__row">
+    <span>Capture</span><i>◆</i><span>Cut</span><i>◆</i><span>Color</span><i>◆</i><span>Deliver</span><i>◆</i>
+    <span>Capture</span><i>◆</i><span>Cut</span><i>◆</i><span>Cut</span><i>◆</i><span>Color</span><i>◆</i><span>Deliver</span><i>◆</i>
+  </div>
+</div>
+
+<!-- ============================================================
+     02 — ABOUT
+============================================================ -->
+<section class="section about" id="about">
+  <div class="sec-head">
+    <span class="sec-head__index" data-reveal>01</span>
+    <h2 class="sec-head__title" data-split>About the <em>creative</em></h2>
+    <span class="sec-head__meta" data-reveal>Videographer / Editor</span>
+  </div>
+
+  <div class="about__grid">
+    <div class="about__media" data-reveal>
+      <div class="frame-stack" data-tilt>
+        <div class="frame frame--back">
+          <span class="frame__perf"></span>
+          <span class="frame__num">A</span>
+        </div>
+        <div class="frame frame--mid">
+          <span class="frame__perf"></span>
+          <span class="frame__num">B</span>
+        </div>
+        <div class="frame frame--front">
+          <img class="frame__img" src="image/ziad.jpeg" width="1200" height="1600" loading="lazy" decoding="async" alt="Ziad Shaaban — videographer and video editor">
+          <span class="frame__scan"></span>
+          <span class="frame__label">PRV · 01</span>
+          <span class="frame__reticle"></span>
+        </div>
+      </div>
+      <span class="about__caption">Camera → Footage → Edit → Story</span>
+    </div>
+
+    <div class="about__body">
+      <p class="about__lead" data-reveal-lines>Ziad Shaaban is a Videographer and Video Editor with 2 years of professional experience in creating engaging visual content.</p>
+      <p data-reveal-lines>He combines filming and editing to transform ideas into cinematic visual stories.</p>
+      <p data-reveal-lines>Through different projects and collaborations with brands and businesses, he adapts his visual style to match each project's identity, audience, and goals.</p>
+
+      <div class="about__list" data-reveal>
+        <h3 class="mono-label">Approach</h3>
+        <ul class="shotlist">
+          <li><i>01</i>Visual storytelling</li>
+          <li><i>02</i>Cinematic composition</li>
+          <li><i>03</i>Clean editing</li>
+          <li><i>04</i>Rhythm and pacing</li>
+          <li><i>05</i>Creative transitions</li>
+          <li><i>06</i>Color correction</li>
+          <li><i>07</i>Social media content</li>
+          <li><i>08</i>Understanding the message behind every video</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats" data-reveal>
+    <div class="stat"><span class="stat__num" data-count="2" data-pad="2">00</span><span class="stat__lbl">Years of experience</span></div>
+    <div class="stat"><span class="stat__num" data-count="15" data-pad="2">00</span><span class="stat__lbl">Selected projects</span></div>
+    <div class="stat"><span class="stat__num" data-count="6" data-pad="2">00</span><span class="stat__lbl">Content categories</span></div>
+    <div class="stat"><span class="stat__num stat__num--txt">24<small>fps</small></span><span class="stat__lbl">Cinematic standard</span></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     03 — CREATIVE PROCESS
+============================================================ -->
+<section class="section process" id="process">
+  <div class="sec-head">
+    <span class="sec-head__index" data-reveal>02</span>
+    <h2 class="sec-head__title" data-split>From idea to <em>final frame</em></h2>
+    <span class="sec-head__meta" data-reveal>Process</span>
+  </div>
+
+  <div class="timeline" id="timeline">
+    <span class="timeline__rail"><span class="timeline__fill" id="timelineFill"></span></span>
+
+    <article class="step" data-reveal>
+      <span class="step__marker"><i></i></span>
+      <span class="step__num" data-count="1" data-pad="2">00</span>
+      <h3 class="step__title">Idea</h3>
+      <p class="step__text">Understanding the concept and message before a single frame is shot.</p>
+      <span class="step__tag">Brief · Reference · Direction</span>
+    </article>
+
+    <article class="step" data-reveal>
+      <span class="step__marker"><i></i></span>
+      <span class="step__num" data-count="2" data-pad="2">00</span>
+      <h3 class="step__title">Shoot</h3>
+      <p class="step__text">Capturing the right moments, angles, and movement.</p>
+      <span class="step__tag">Frame · Light · Movement</span>
+    </article>
+
+    <article class="step" data-reveal>
+      <span class="step__marker"><i></i></span>
+      <span class="step__num" data-count="3" data-pad="2">00</span>
+      <h3 class="step__title">Edit</h3>
+      <p class="step__text">Building rhythm, pacing, transitions, and storytelling.</p>
+      <span class="step__tag">Cut · Rhythm · Story</span>
+    </article>
+
+    <article class="step" data-reveal>
+      <span class="step__marker"><i></i></span>
+      <span class="step__num" data-count="4" data-pad="2">00</span>
+      <h3 class="step__title">Final frame</h3>
+      <p class="step__text">Color, sound, details, and final delivery.</p>
+      <span class="step__tag">Grade · Sound · Export</span>
+    </article>
+  </div>
+</section>
+
+<!-- ============================================================
+     04 — FEATURED WORK
+============================================================ -->
+<section class="section featured" id="featured">
+  <div class="sec-head">
+    <span class="sec-head__index" data-reveal>03</span>
+    <h2 class="sec-head__title" data-split>Featured <em>work</em></h2>
+    <span class="sec-head__meta" data-reveal>The Reel · 2026</span>
+  </div>
+
+  <div class="reel" data-reveal
+       data-project
+       data-title="The Reel"
+       data-category="Showreel"
+       data-desc="A condensed cut of selected moments — pacing, framing and color in one continuous statement."
+       data-year="2026"
+       data-role="Filming · Edit · Color"
+       data-duration="01:30"
+       data-format="4K · 24 fps"
+       data-cursor="play">
+    <div class="reel__media">
+      <!-- Replace: set data-src on the video to your file, e.g. data-src="videos/reel.mp4" -->
+      <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+      <div class="reel__ph">
+        <span class="reel__ph-grid"></span>
+        <span class="reel__ph-title">THE REEL</span>
+        <span class="reel__ph-sub">Showreel · footage coming soon</span>
+      </div>
+      <span class="reel__scrim"></span>
+    </div>
+
+    <span class="reel__badge" id="reelBadge">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      <b>Watch the reel</b>
+    </span>
+
+    <div class="reel__meta">
+      <span class="mono-label">Featured project</span>
+      <h3>The Reel</h3>
+      <p>Showreel · 01:30 · 4K</p>
+    </div>
+    <span class="reel__edge"></span>
+  </div>
+</section>
+
+<!-- ============================================================
+     05 — SELECTED PROJECTS (horizontal archive)
+============================================================ -->
+<section class="section projects" id="projects">
+  <div class="sec-head">
+    <span class="sec-head__index" data-reveal>04</span>
+    <h2 class="sec-head__title" data-split>Selected <em>projects</em></h2>
+    <span class="sec-head__meta" data-reveal>15 films · scroll →</span>
+  </div>
+
+  <div class="archive" id="archive">
+    <div class="archive__track" id="archiveTrack">
+
+      <!-- 01 -->
+      <article class="p" data-cursor="view"
+        data-title="Cinematic Stories" data-category="Brand Film" data-year="2026"
+        data-role="Filming · Edit" data-duration="02:14" data-format="4K · 24 fps"
+        data-desc="A slow, filmic piece built around light, texture and controlled camera movement.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>01</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">01</span>
+          <h3 class="p__title">Cinematic Stories</h3>
+          <span class="p__cat">Brand Film</span>
+          <p class="p__desc">A slow, filmic piece built around light, texture and controlled camera movement.</p>
+        </div>
+      </article>
+
+      <!-- 02 -->
+      <article class="p p--wide" data-cursor="view"
+        data-title="Urban Motion" data-category="Lifestyle Promo" data-year="2025"
+        data-role="Edit · Motion" data-duration="01:05" data-format="4K · 30 fps"
+        data-desc="Street rhythm translated into pace: quick cuts, moving frames and city energy.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>02</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">02</span>
+          <h3 class="p__title">Urban Motion</h3>
+          <span class="p__cat">Lifestyle Promo</span>
+          <p class="p__desc">Street rhythm translated into pace: quick cuts, moving frames and city energy.</p>
+        </div>
+      </article>
+
+      <!-- 03 -->
+      <article class="p p--tall" data-cursor="view"
+        data-title="The Red Frame" data-category="Fashion Film" data-year="2025"
+        data-role="Filming · Edit · Color" data-duration="00:48" data-format="4K · 24 fps"
+        data-desc="A bold single-colour study where every frame is composed around one accent.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>03</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">03</span>
+          <h3 class="p__title">The Red Frame</h3>
+          <span class="p__cat">Fashion Film</span>
+          <p class="p__desc">A bold single-colour study where every frame is composed around one accent.</p>
+        </div>
+      </article>
+
+      <!-- 04 -->
+      <article class="p" data-cursor="view"
+        data-title="Night Shift" data-category="Documentary" data-year="2025"
+        data-role="Filming · Edit" data-duration="03:02" data-format="4K · 24 fps"
+        data-desc="After-dark storytelling with available light and a restrained, patient edit.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>04</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">04</span>
+          <h3 class="p__title">Night Shift</h3>
+          <span class="p__cat">Documentary</span>
+          <p class="p__desc">After-dark storytelling with available light and a restrained, patient edit.</p>
+        </div>
+      </article>
+
+      <!-- 05 -->
+      <article class="p p--wide" data-cursor="view"
+        data-title="Visual Identity" data-category="Brand Content" data-year="2026"
+        data-role="Concept · Edit" data-duration="01:22" data-format="1080p · 25 fps"
+        data-desc="A visual language built to carry a brand's message across every second.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>05</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">05</span>
+          <h3 class="p__title">Visual Identity</h3>
+          <span class="p__cat">Brand Content</span>
+          <p class="p__desc">A visual language built to carry a brand's message across every second.</p>
+        </div>
+      </article>
+
+      <!-- 06 -->
+      <article class="p" data-cursor="view"
+        data-title="Motion &amp; Form" data-category="Product Film" data-year="2025"
+        data-role="Filming · Edit" data-duration="00:56" data-format="4K · 60 fps"
+        data-desc="Shapes, surfaces and movement arranged into a clean product narrative.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>06</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">06</span>
+          <h3 class="p__title">Motion &amp; Form</h3>
+          <span class="p__cat">Product Film</span>
+          <p class="p__desc">Shapes, surfaces and movement arranged into a clean product narrative.</p>
+        </div>
+      </article>
+
+      <!-- 07 -->
+      <article class="p p--tall" data-cursor="view"
+        data-title="Behind The Scene" data-category="BTS / Process" data-year="2024"
+        data-role="Filming · Edit" data-duration="02:40" data-format="1080p · 30 fps"
+        data-desc="The making-of, cut with the same care as the final piece.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>07</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">07</span>
+          <h3 class="p__title">Behind The Scene</h3>
+          <span class="p__cat">BTS / Process</span>
+          <p class="p__desc">The making-of, cut with the same care as the final piece.</p>
+        </div>
+      </article>
+
+      <!-- 08 -->
+      <article class="p p--wide" data-cursor="view"
+        data-title="City Lights" data-category="Travel / Place" data-year="2025"
+        data-role="Filming · Edit · Color" data-duration="01:58" data-format="4K · 24 fps"
+        data-desc="A place told through reflections, neon and the hours between dusk and dawn.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>08</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">08</span>
+          <h3 class="p__title">City Lights</h3>
+          <span class="p__cat">Travel / Place</span>
+          <p class="p__desc">A place told through reflections, neon and the hours between dusk and dawn.</p>
+        </div>
+      </article>
+
+      <!-- 09 -->
+      <article class="p" data-cursor="view"
+        data-title="Raw To Final" data-category="Editing Showreel" data-year="2026"
+        data-role="Edit · Color" data-duration="01:12" data-format="4K · 24 fps"
+        data-desc="From untouched footage to finished cut: rhythm, colour and sound in one pass.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>09</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">09</span>
+          <h3 class="p__title">Raw To Final</h3>
+          <span class="p__cat">Editing Showreel</span>
+          <p class="p__desc">From untouched footage to finished cut: rhythm, colour and sound in one pass.</p>
+        </div>
+      </article>
+
+      <!-- 10 -->
+      <article class="p p--tall" data-cursor="view"
+        data-title="Creative Perspective" data-category="Concept Video" data-year="2025"
+        data-role="Concept · Filming · Edit" data-duration="01:34" data-format="4K · 24 fps"
+        data-desc="An unconventional angle on a simple idea, shaped in the edit.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>10</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">10</span>
+          <h3 class="p__title">Creative Perspective</h3>
+          <span class="p__cat">Concept Video</span>
+          <p class="p__desc">An unconventional angle on a simple idea, shaped in the edit.</p>
+        </div>
+      </article>
+
+      <!-- 11 -->
+      <article class="p p--wide" data-cursor="view"
+        data-title="Moments In Motion" data-category="Event Film" data-year="2024"
+        data-role="Filming · Edit" data-duration="02:26" data-format="4K · 25 fps"
+        data-desc="Key moments captured and sequenced to keep the energy of the day.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>11</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">11</span>
+          <h3 class="p__title">Moments In Motion</h3>
+          <span class="p__cat">Event Film</span>
+          <p class="p__desc">Key moments captured and sequenced to keep the energy of the day.</p>
+        </div>
+      </article>
+
+      <!-- 12 -->
+      <article class="p" data-cursor="view"
+        data-title="Visual Rhythm" data-category="Social Campaign" data-year="2026"
+        data-role="Edit · Motion" data-duration="00:38" data-format="1080p · 30 fps"
+        data-desc="Short-form content cut to a beat, designed to hold attention frame by frame.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>12</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">12</span>
+          <h3 class="p__title">Visual Rhythm</h3>
+          <span class="p__cat">Social Campaign</span>
+          <p class="p__desc">Short-form content cut to a beat, designed to hold attention frame by frame.</p>
+        </div>
+      </article>
+
+      <!-- 13 -->
+      <article class="p p--tall" data-cursor="view"
+        data-title="The Details" data-category="Macro / Product" data-year="2025"
+        data-role="Filming · Edit · Color" data-duration="01:04" data-format="4K · 60 fps"
+        data-desc="Close-up textures and precise movement, edited for a quiet, premium feel.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>13</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">13</span>
+          <h3 class="p__title">The Details</h3>
+          <span class="p__cat">Macro / Product</span>
+          <p class="p__desc">Close-up textures and precise movement, edited for a quiet, premium feel.</p>
+        </div>
+      </article>
+
+      <!-- 14 -->
+      <article class="p p--wide" data-cursor="view"
+        data-title="Frame By Frame" data-category="Montage" data-year="2024"
+        data-role="Edit" data-duration="01:44" data-format="4K · 24 fps"
+        data-desc="A dense montage where every cut earns its place.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>14</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">14</span>
+          <h3 class="p__title">Frame By Frame</h3>
+          <span class="p__cat">Montage</span>
+          <p class="p__desc">A dense montage where every cut earns its place.</p>
+        </div>
+      </article>
+
+      <!-- 15 -->
+      <article class="p p--tall" data-cursor="view"
+        data-title="Final Cut" data-category="Showreel" data-year="2026"
+        data-role="Filming · Edit · Color" data-duration="02:02" data-format="4K · 24 fps"
+        data-desc="The closing compilation: a summary of style, pace and intent.">
+        <div class="p__media">
+          <video class="pv-video" muted loop playsinline preload="none" data-src=""></video>
+          <span class="p__ph"><b>15</b></span>
+          <span class="p__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </div>
+        <div class="p__info">
+          <span class="p__num">15</span>
+          <h3 class="p__title">Final Cut</h3>
+          <span class="p__cat">Showreel</span>
+          <p class="p__desc">The closing compilation: a summary of style, pace and intent.</p>
+        </div>
+      </article>
+
+      <div class="archive__end">
+        <span class="mono-label">End of archive</span>
+        <!-- Replace: set data-src on each <video> above to your file, e.g. data-src="videos/01.mp4" -->
+        <p>Fifteen films, one language of light, rhythm and intent.</p>
+        <a href="#contact" class="btn btn--ghost magnetic" data-nav data-cursor="hover"><span>Start your project</span></a>
+      </div>
+
+    </div>
+    <span class="archive__progress"><i id="archiveProgress"></i></span>
+  </div>
+</section>
+
+<!-- ============================================================
+     MARQUEE BAND 02
+============================================================ -->
+<div class="marquee marquee--rev" data-marquee data-speed="-1">
+  <div class="marquee__row">
+    <span>Footage</span><i>◆</i><span>Rhythm</span><i>◆</i><span>Story</span><i>◆</i><span>Frame</span><i>◆</i>
+    <span>Footage</span><i>◆</i><span>Rhythm</span><i>◆</i><span>Story</span><i>◆</i><span>Frame</span><i>◆</i>
+  </div>
+</div>
+
+<!-- ============================================================
+     06 — SKILLS / TOOLS OF THE CRAFT
+============================================================ -->
+<section class="section skills" id="skills">
+  <div class="sec-head">
+    <span class="sec-head__index" data-reveal>05</span>
+    <h2 class="sec-head__title" data-split>Tools of the <em>craft</em></h2>
+    <span class="sec-head__meta" data-reveal>Software · Skills</span>
+  </div>
+
+  <!-- Editing timeline made of software tracks -->
+  <div class="nle" id="nle" data-reveal>
+    <div class="nle__head">
+      <span class="mono-label">Sequence · ZS_MASTER_01</span>
+      <span class="nle__tc" id="nleTc">00:00:00:00</span>
+    </div>
+
+    <div class="nle__lane" data-cursor="hover">
+      <span class="nle__track">V1</span>
+      <div class="nle__clips">
+        <span class="clip" style="--w:26%"><b>Adobe Premiere Pro</b><i>Main edit · cuts · sequences</i></span>
+        <span class="clip clip--red" style="--w:20%"><b>Color</b><i>Correction pass</i></span>
+        <span class="clip" style="--w:30%"><b>Sound</b><i>Mix · levels</i></span>
+        <span class="clip" style="--w:16%"><b>Export</b></span>
+      </div>
+    </div>
+
+    <div class="nle__lane" data-cursor="hover">
+      <span class="nle__track">V2</span>
+      <div class="nle__clips">
+        <span class="clip clip--alt" style="--w:34%"><b>CapCut</b><i>Fast · mobile editing</i></span>
+        <span class="clip" style="--w:22%"><b>Short-form</b><i>Reels · shorts</i></span>
+        <span class="clip clip--red" style="--w:28%"><b>Titles</b><i>Motion · captions</i></span>
+        <span class="clip" style="--w:10%"><b>Post</b></span>
+      </div>
+    </div>
+
+    <div class="nle__lane nle__lane--audio">
+      <span class="nle__track">A1</span>
+      <div class="nle__wave"><span></span></div>
+    </div>
+
+    <span class="nle__ruler" id="nleRuler"></span>
+    <span class="nle__playhead" id="nlePlayhead"></span>
+  </div>
+
+  <div class="skills__cols">
+    <div class="tool" data-reveal data-cursor="hover">
+      <span class="tool__idx">01</span>
+      <h3>Video Editing</h3>
+      <p class="tool__name">Adobe Premiere Pro</p>
+      <p class="tool__txt">Structure, pacing, transitions and finishing — from raw bins to final export.</p>
+      <span class="tool__bar"><i style="--p:96%"></i></span>
+    </div>
+    <div class="tool" data-reveal data-cursor="hover">
+      <span class="tool__idx">02</span>
+      <h3>Mobile / Fast Editing</h3>
+      <p class="tool__name">CapCut</p>
+      <p class="tool__txt">Quick-turn social content, captions and trends delivered at speed.</p>
+      <span class="tool__bar"><i style="--p:92%"></i></span>
+    </div>
+  </div>
+
+  <div class="strip-wrap">
+    <span class="mono-label" data-reveal>Creative skills</span>
+    <div class="strip" data-reveal>
+      <div class="strip__cell"><i>01</i><b>Videography</b></div>
+      <div class="strip__cell"><i>02</i><b>Video Editing</b></div>
+      <div class="strip__cell"><i>03</i><b>Cinematic Storytelling</b></div>
+      <div class="strip__cell"><i>04</i><b>Color Correction</b></div>
+      <div class="strip__cell"><i>05</i><b>Creative Transitions</b></div>
+      <div class="strip__cell"><i>06</i><b>Visual Rhythm</b></div>
+      <div class="strip__cell"><i>07</i><b>Social Media Content</b></div>
+      <div class="strip__cell"><i>08</i><b>Short-form Video</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     07 — EXPERIENCE
+============================================================ -->
+<section class="section experience" id="experience">
+  <div class="sec-head">
+    <span class="sec-head__index" data-reveal>06</span>
+    <h2 class="sec-head__title" data-split>Trusted with <em>different visions</em></h2>
+    <span class="sec-head__meta" data-reveal>Experience</span>
+  </div>
+
+  <p class="experience__quote" data-reveal-lines>Over the past two years, Ziad has worked across a variety of creative projects and collaborated with different brands and businesses, creating visual content tailored to each project's goals.</p>
+
+  <ul class="cats">
+    <li class="cat" data-reveal data-cursor="hover"><span class="cat__idx">01</span><span class="cat__name">Commercial Content</span><span class="cat__meta">Filming · Edit</span><span class="cat__arrow">→</span></li>
+    <li class="cat" data-reveal data-cursor="hover"><span class="cat__idx">02</span><span class="cat__name">Social Media</span><span class="cat__meta">Short-form · Vertical</span><span class="cat__arrow">→</span></li>
+    <li class="cat" data-reveal data-cursor="hover"><span class="cat__idx">03</span><span class="cat__name">Brand Videos</span><span class="cat__meta">Story · Identity</span><span class="cat__arrow">→</span></li>
+    <li class="cat" data-reveal data-cursor="hover"><span class="cat__idx">04</span><span class="cat__name">Promotional Videos</span><span class="cat__meta">Launch · Offer</span><span class="cat__arrow">→</span></li>
+    <li class="cat" data-reveal data-cursor="hover"><span class="cat__idx">05</span><span class="cat__name">Short-form Content</span><span class="cat__meta">Reels · Shorts</span><span class="cat__arrow">→</span></li>
+    <li class="cat" data-reveal data-cursor="hover"><span class="cat__idx">06</span><span class="cat__name">Creative Campaigns</span><span class="cat__meta">Concept · Motion</span><span class="cat__arrow">→</span></li>
+  </ul>
+</section>
+
+<!-- ============================================================
+     08 — CONTACT
+============================================================ -->
+<section class="section contact" id="contact">
+  <div class="contact__bg" aria-hidden="true"><span></span></div>
+
+  <span class="mono-label" data-reveal>07 — Contact</span>
+  <h2 class="contact__title">
+    <span class="line"><span class="line__in" data-reveal>Let's create</span></span>
+    <span class="line"><span class="line__in" data-reveal>something worth</span></span>
+    <span class="line"><span class="line__in line__in--outline" data-reveal>watching.</span></span>
+  </h2>
+  <p class="contact__sub" data-reveal-lines>Have an idea, project, or story that needs to be brought to life?</p>
+
+  <div class="contact__lines" data-reveal>
+    <a class="cline" href="tel:01021394706" data-cursor="hover">
+      <span class="mono-label">Call</span>
+      <b>01021394706</b>
+      <i>→</i>
+    </a>
+    <a class="cline" href="https://wa.me/201018430937" target="_blank" rel="noopener" data-cursor="hover">
+      <span class="mono-label">WhatsApp</span>
+      <b>01018430937</b>
+      <i>→</i>
+    </a>
+  </div>
+
+  <div class="contact__actions" data-reveal>
+    <a href="tel:01021394706" class="btn btn--solid magnetic" data-cursor="hover"><span>Call now</span></a>
+    <a href="https://wa.me/201018430937" target="_blank" rel="noopener" class="btn btn--ghost magnetic" data-cursor="hover"><span>WhatsApp</span></a>
+    <a href="https://wa.me/201018430937?text=Hi%20Ziad%2C%20I%27d%20like%20to%20start%20a%20project." target="_blank" rel="noopener" class="btn btn--red magnetic" data-cursor="hover"><span>Start a project</span></a>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================================================
+     FOOTER
+============================================================ -->
+<footer class="footer">
+  <div class="footer__top">
+    <span class="footer__logo">ZIAD SHAABAN</span>
+    <span class="footer__role">Videographer &amp; Video Editor</span>
+    <a href="#home" class="footer__up magnetic" data-nav data-cursor="hover"><span>Back to top ↑</span></a>
+  </div>
+  <div class="footer__bottom">
+    <span>Capturing moments. Editing stories.</span>
+    <span>© 2026 Ziad Shaaban. All Rights Reserved.</span>
+  </div>
+</footer>
+
+<!-- ============================================================
+     PROJECT MODAL / IMMERSIVE VIEWER
+============================================================ -->
+<div class="modal" id="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Project viewer">
+  <div class="modal__wipe"></div>
+  <div class="modal__inner">
+    <header class="modal__head">
+      <span class="modal__idx" id="mIdx">01</span>
+      <span class="mono-label" id="mCat">Category</span>
+      <button class="modal__close" id="mClose" aria-label="Close project"><span></span><span></span></button>
+    </header>
+
+    <div class="modal__stage">
+      <!-- Replace: set data-src on this video to your file, e.g. data-src="videos/01-cinematic-stories.mp4" -->
+      <video class="pv-video" id="mVideo" muted loop playsinline preload="none" data-src=""></video>
+      <div class="modal__ph">
+        <span class="modal__ph-num" id="mPhNum">01</span>
+        <span class="modal__ph-txt">Project film · footage coming soon</span>
+      </div>
+      <span class="modal__scan"></span>
+    </div>
+
+    <div class="modal__body">
+      <div class="modal__left">
+        <h2 class="modal__title" id="mTitle">Project</h2>
+        <p class="modal__desc" id="mDesc">Description</p>
+      </div>
+      <dl class="modal__meta">
+        <div><dt>Year</dt><dd id="mYear">—</dd></div>
+        <div><dt>Role</dt><dd id="mRole">—</dd></div>
+        <div><dt>Duration</dt><dd id="mDur">—</dd></div>
+        <div><dt>Format</dt><dd id="mFmt">—</dd></div>
+      </dl>
+    </div>
+
+    <footer class="modal__foot">
+      <button class="modal__nav" id="mPrev"><i>←</i> Prev</button>
+      <span class="modal__count"><b id="mNow">01</b> / 15</span>
+      <button class="modal__nav" id="mNext">Next <i>→</i></button>
+    </footer>
+  </div>
+</div>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
