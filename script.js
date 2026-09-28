@@ -1,229 +1,302 @@
 /* ==========================================================================
-   ZIAD SHAABAN — Cinematic Portfolio
-   Vanilla JS · GSAP/ScrollTrigger · Lenis · three.js
-   --------------------------------------------------------------------------
-   00  Helpers & environment
-   01  Smooth scrolling (Lenis) + GSAP bridge
-   02  Preloader
-   03  Custom cursor + magnetic elements
-   04  Navigation, active state, cinematic section wipe
-   05  Reveal system (word masks, line reveals, counters)
-   06  Hero: parallax, HUD timecode, timeline playhead
-   07  Hero: three.js virtual film studio (lens / iris / frames)
-   08  Marquee bands (scroll-velocity driven)
-   09  Featured reel (badge follow + hover video)
-   10  Projects archive (horizontal pin, 3D depth, hover tilt)
-   11  Project modal / immersive viewer
-   12  Video previews (easy-to-replace data-src)
-   13  Process timeline progress
-   14  Skills NLE (interactive editing timeline)
-   15  Page timecode + scroll progress
+   ZIAD SHAABAN — Simple UI
+   Vanilla JS: nav · reveals · counters · modal · videos · EN/AR translation
    ========================================================================== */
 
-/* --------------------------------------------------------------------------
-   00 — HELPERS & ENVIRONMENT
--------------------------------------------------------------------------- */
 const $  = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => Array.from(c.querySelectorAll(s));
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const lerp  = (a, b, t) => a + (b - a) * t;
 
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const TOUCH   = window.matchMedia('(hover: none), (pointer: coarse)').matches;
-const HAS_GSAP = !!(window.gsap && window.ScrollTrigger);
-const NARROW  = () => window.matchMedia('(max-width: 900px)').matches;
-
-if (HAS_GSAP) gsap.registerPlugin(ScrollTrigger);
-else document.documentElement.classList.add('no-gsap');
 
 /* --------------------------------------------------------------------------
-   01 — SMOOTH SCROLLING + GSAP BRIDGE
+   ARABIC TRANSLATIONS (English lives in index.html and is captured on boot)
 -------------------------------------------------------------------------- */
-let lenis = null;
+const AR = {
+  'nav.home':'الرئيسية',
+  'nav.about':'نبذة عني',
+  'nav.projects':'المشاريع',
+  'nav.skills':'المهارات',
+  'nav.contact':'تواصل معي',
+  'nav.cta':'ابدأ مشروعًا',
+  'a11y.menu':'فتح القائمة',
+  'a11y.close':'إغلاق المشروع',
 
-function initScroll() {
-  if (REDUCED || !window.Lenis) {
-    document.documentElement.classList.add('no-lenis');
-    return;
-  }
-  lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 1, touchMultiplier: 1.6 });
+  'hero.eyebrow':'مصوّر فيديو ومونتير · سنتان من الخبرة',
+  'hero.role':'مصوّر فيديو<br>ومونتير',
+  'hero.statement':'ألتقط اللحظات. أحرّر القصص. <br>أحوّل اللقطات إلى تجارب.',
+  'hero.cta1':'استكشف أعمالي',
+  'hero.cta2':'تواصل معي',
+  'hero.scroll':'مرّر للأسفل',
 
-  if (HAS_GSAP) {
-    lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add((t) => lenis.raf(t * 1000));
-    gsap.ticker.lagSmoothing(0);
-  } else {
-    const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); };
-    requestAnimationFrame(raf);
-  }
-}
+  'm1.a':'الالتقاط','m1.b':'المونتاج','m1.c':'الألوان','m1.d':'التسليم',
+  'm2.a':'اللقطات','m2.b':'الإيقاع','m2.c':'القصة','m2.d':'الكادر',
 
-function scrollToTarget(el, immediate = false) {
-  if (lenis) lenis.scrollTo(el, { immediate, duration: 1.2 });
-  else el.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth' });
-}
+  'about.title':'عن <em>المبدع</em>',
+  'about.meta':'تصوير / مونتاج',
+  'about.caption':'الكاميرا ← اللقطات ← المونتاج ← القصة',
+  'about.lead':'زياد شعبان مصوّر فيديو ومونتير بخبرة عملية سنتان في صنع محتوى بصري جذّاب.',
+  'about.p2':'يجمع بين التصوير والمونتاج ليحوّل الأفكار إلى قصص بصرية سينمائية.',
+  'about.p3':'من خلال مشاريع مختلفة وتعاون مع علامات تجارية وأعمال، يكيّف أسلوبه البصري ليتوافق مع هوية كل مشروع وجمهوره وأهدافه.',
+  'about.approach':'أسلوب العمل',
+  'about.li1':'السرد البصري',
+  'about.li2':'التكوين السينمائي',
+  'about.li3':'مونتاج نظيف',
+  'about.li4':'الإيقاع والوتيرة',
+  'about.li5':'انتقالات إبداعية',
+  'about.li6':'تصحيح الألوان',
+  'about.li7':'محتوى وسائل التواصل',
+  'about.li8':'فهم الرسالة خلف كل فيديو',
 
-function stopScroll(stop = true) {
-  if (!lenis) {
-    document.body.style.overflow = stop ? 'hidden' : '';
-    return;
-  }
-  stop ? lenis.stop() : lenis.start();
-}
+  'stat.1':'سنوات خبرة',
+  'stat.2':'مشاريع مختارة',
+  'stat.3':'تصنيفات محتوى',
+  'stat.4':'المعيار السينمائي',
 
-/* Deep link: #section in the URL opens on that section */
-function scrollToHash() {
-  const hash = location.hash;
-  if (!hash || hash === '#') return;
-  const el = $(hash);
-  if (!el) return;
-  setTimeout(() => {
-    if (lenis) lenis.scrollTo(el, { immediate: true });
-    else window.scrollTo(0, el.offsetTop);
-    if (HAS_GSAP) ScrollTrigger.update();
-    if (typeof initNav === 'function') window.dispatchEvent(new Event('scroll'));
-  }, 150);
-}
+  'process.title':'من الفكرة إلى <em>اللقطة الأخيرة</em>',
+  'process.meta':'خطوات العمل',
+  'process.s1t':'فكرة',
+  'process.s1x':'فهم المفهوم والرسالة قبل تصوير أول كادر.',
+  'process.s1g':'بريفي · مراجع · اتجاه',
+  'process.s2t':'تصوير',
+  'process.s2x':'التقاط اللحظات والزوايا والحركة الصحيحة.',
+  'process.s2g':'كادر · إضاءة · حركة',
+  'process.s3t':'مونتاج',
+  'process.s3x':'بناء الإيقاع والوتيرة والانتقالات والسرد.',
+  'process.s3g':'قطع · إيقاع · قصة',
+  'process.s4t':'اللقطة النهائية',
+  'process.s4x':'الألوان والصوت والتفاصيل والتسليم النهائي.',
+  'process.s4g':'تلوين · صوت · تصدير',
+
+  'featured.title':'أعمال <em>مميزة</em>',
+  'featured.meta':'الريل · 2026',
+
+  'reel.phTitle':'الريل',
+  'reel.phSub':'ريل عرضي · اللقطات قريبًا',
+  'reel.badge':'شاهد الريل',
+  'reel.metaLabel':'مشروع مميز',
+  'reel.title':'الريل',
+  'reel.metaSub':'ريل · 01:30 · 4K',
+  'reel.category':'ريل عرضي',
+  'reel.desc':'كانت مختارة من اللحظات المميزة — إيقاع وتكوين وتلوين في عبارة واحدة متصلة.',
+  'reel.role':'تصوير · مونتاج · تلوين',
+  'reel.count':'ريل',
+
+  'projects.title':'مشاريع <em>مختارة</em>',
+  'projects.meta':'15 فيلمًا · مرّر ←',
+  'projects.endLabel':'نهاية الأرشيف',
+  'projects.endText':'خمسة عشر فيلمًا، لغة واحدة من الضوء والإيقاع والنية.',
+  'projects.endCta':'ابدأ مشروعك',
+
+  'work.01.title':'قصص سينمائية',
+  'work.01.category':'فيلم براند',
+  'work.01.desc':'عمل سينمائي هادئ مبني على الضوء والملمس وحركة الكاميرا المسيطر عليها.',
+  'work.01.role':'تصوير · مونتاج',
+  'work.02.title':'حركة المدينة',
+  'work.02.category':'برومو لايف ستايل',
+  'work.02.desc':'إيقاع الشارع مترجمًا إلى وتيرة: قطع سريع وإطارات متحركة وطاقة المدينة.',
+  'work.02.role':'مونتاج · موشن',
+  'work.03.title':'الكادر الأحمر',
+  'work.03.category':'فيلم أزياء',
+  'work.03.desc':'دراسة جريئة بلون واحد يُبنى فيها كل كادر حول لمسة مميزة واحدة.',
+  'work.03.role':'تصوير · مونتاج · تلوين',
+  'work.04.title':'وردية الليل',
+  'work.04.category':'فيلم وثائقي',
+  'work.04.desc':'سرد بعد الغروب بالإضاءة الطبيعية ومونتاج هادئ ومتحفّظ.',
+  'work.04.role':'تصوير · مونتاج',
+  'work.05.title':'الهوية البصرية',
+  'work.05.category':'محتوى براند',
+  'work.05.desc':'لغة بصرية مصمّمة لتحمل رسالة العلامة التجارية في كل ثانية.',
+  'work.05.role':'فكرة · مونتاج',
+  'work.06.title':'الحركة والشكل',
+  'work.06.category':'فيلم منتج',
+  'work.06.desc':'أشكال وأسطح وحركة مرتبة في سرد نظيف للمنتج.',
+  'work.06.role':'تصوير · مونتاج',
+  'work.07.title':'خلف الكواليس',
+  'work.07.category':'كواليس · عملية',
+  'work.07.desc':'كواليس العمل، مونتاج بنفس العناية المخصّصة للعمل النهائي.',
+  'work.07.role':'تصوير · مونتاج',
+  'work.08.title':'أضواء المدينة',
+  'work.08.category':'سفر · مكان',
+  'work.08.desc':'مكان يُروى عبر الانعكاسات والنيون والساعات بين الغسق والفجر.',
+  'work.08.role':'تصوير · مونتاج · تلوين',
+  'work.09.title':'من الخام إلى النهائي',
+  'work.09.category':'ريل مونتاج',
+  'work.09.desc':'من اللقطات الخام إلى النسخة النهائية: إيقاع وألوان وصوت في مرور واحد.',
+  'work.09.role':'مونتاج · تلوين',
+  'work.10.title':'منظور إبداعي',
+  'work.10.category':'فيديو مفهوم',
+  'work.10.desc':'زاوية غير تقليدية على فكرة بسيطة، تتشكّل في المونتاج.',
+  'work.10.role':'فكرة · تصوير · مونتاج',
+  'work.11.title':'لحظات متحركة',
+  'work.11.category':'فيلم فعالية',
+  'work.11.desc':'لحظات رئيسية التُقطت ورُتّبت للحفاظ على طاقة اليوم.',
+  'work.11.role':'تصوير · مونتاج',
+  'work.12.title':'الإيقاع البصري',
+  'work.12.category':'حملة سوشال',
+  'work.12.desc':'محتوى قصير مونتاج على إيقاع، مصمّم للاحتفاظ بالانتباه كادرًا بكادر.',
+  'work.12.role':'مونتاج · موشن',
+  'work.13.title':'التفاصيل',
+  'work.13.category':'ماكرو · منتج',
+  'work.13.desc':'لقطات قريبة وحركة دقيقة، مونتاج بهدوء وبأثر فاخر.',
+  'work.13.role':'تصوير · مونتاج · تلوين',
+  'work.14.title':'كادر بكادر',
+  'work.14.category':'مونتاج',
+  'work.14.desc':'مونتاج مكثّف كل قطعة فيه يبرر مكانها.',
+  'work.14.role':'مونتاج',
+  'work.15.title':'المونتاج النهائي',
+  'work.15.category':'ريل عرضي',
+  'work.15.desc':'التجميعة الختامية: خلاصة للأسلوب والوتيرة والنية.',
+  'work.15.role':'تصوير · مونتاج · تلوين',
+
+  'skills.title':'أدوات <em>الحرفة</em>',
+  'skills.meta':'برامج · مهارات',
+  'skills.stripLabel':'مهارات إبداعية',
+  'sk.c1':'المونتاج الأساسي · لقطات · تسلسلات',
+  'sk.c2':'الألوان',
+  'sk.c3':'دورة تصحيح الألوان',
+  'sk.c4':'الصوت',
+  'sk.c5':'مكس · مستويات',
+  'sk.c6':'تصدير',
+  'sk.c7':'سريع · مونتاج موبايل',
+  'sk.c8':'مقاطع قصيرة',
+  'sk.c9':'ريلز · شورتس',
+  'sk.c10':'التترات',
+  'sk.c11':'موشن · تترات',
+  'sk.c12':'ما بعد الإنتاج',
+  'sk.t1t':'مونتاج الفيديو',
+  'sk.t1x':'بنية ووتيرة وانتقالات ولمسات نهائية — من الخام إلى التصدير النهائي.',
+  'sk.t2t':'مونتاج سريع / موبايل',
+  'sk.t2x':'محتوى سوشال سريع الإنجاز مع تترات واتجاهات تُسلّم في وقت قياسي.',
+  'sk.s1':'تصوير فيديو',
+  'sk.s2':'مونتاج فيديو',
+  'sk.s3':'السرد السينمائي',
+  'sk.s4':'تصحيح الألوان',
+  'sk.s5':'انتقالات إبداعية',
+  'sk.s6':'الإيقاع البصري',
+  'sk.s7':'محتوى السوشيال ميديا',
+  'sk.s8':'فيديو قصير',
+
+  'exp.title':'ثقة في <em>رؤى مختلفة</em>',
+  'exp.meta':'الخبرات',
+  'exp.quote':'على مدى العامين الماضيين، عمل زياد في مجموعة متنوعة من المشاريع الإبداعية وتعاون مع علامات تجارية وأعمال مختلفة، لإنتاج محتوى بصري يناسب أهداف كل مشروع.',
+  'exp.c1n':'محتوى تجاري','exp.c1m':'تصوير · مونتاج',
+  'exp.c2n':'وسائل التواصل','exp.c2m':'قصير · عمودي',
+  'exp.c3n':'فيديوهات البراند','exp.c3m':'قصة · هوية',
+  'exp.c4n':'فيديوهات ترويجية','exp.c4m':'إطلاق · عرض',
+  'exp.c5n':'محتوى قصير','exp.c5m':'ريلز · شورتس',
+  'exp.c6n':'حملات إبداعية','exp.c6m':'فكرة · موشن',
+
+  'contact.label':'07 — تواصل معي',
+  'contact.l1':'هيّا نصنع',
+  'contact.l2':'شيئًا يستحق',
+  'contact.l3':'المشاهدة.',
+  'contact.sub':'لديك فكرة أو مشروع أو قصة تحتاج أن ترى النور؟',
+  'contact.call':'اتصال',
+  'contact.btnCall':'اتصل الآن',
+  'contact.btnStart':'ابدأ مشروعًا',
+
+  'footer.role':'مصوّر فيديو ومونتير',
+  'footer.up':'إلى الأعلى ↑',
+  'footer.b1':'ألتقط اللحظات. أحرّر القصص.',
+  'footer.b2':'© 2026 زياد شعبان. جميع الحقوق محفوظة.',
+
+  'modal.ph':'فيلم المشروع · اللقطات قريبًا',
+  'modal.year':'السنة',
+  'modal.role':'الدور',
+  'modal.dur':'المدة',
+  'modal.fmt':'الصيغة',
+  'modal.prev':'السابق',
+  'modal.next':'التالي',
+
+  'doc.title':'زياد شعبان — مصوّر فيديو ومونتير'
+};
 
 /* --------------------------------------------------------------------------
-   02 — PRELOADER
+   LANGUAGE (default EN, toggle AR)
 -------------------------------------------------------------------------- */
-function initLoader() {
-  const loader = $('#loader');
-  const fill   = $('#loaderFill');
-  const num    = $('#loaderNum');
-  const hero   = $('.hero');
-  if (!loader) return;
+let LANG = 'en';
+const originals = new Map();   // element -> english innerHTML
+const attrOriginals = new Map(); // element -> { attr: { orig, key } }
 
-  const start = performance.now();
-  const DUR = REDUCED ? 250 : 1500;
-  let finished = false;
-
-  const finish = () => {
-    if (finished) return;
-    finished = true;
-    fill.style.width = '100%';
-    num.textContent = '100';
-    loader.classList.add('is-done');
-    hero?.classList.add('is-ready');
-    scrollToHash();
-    if (HAS_GSAP) ScrollTrigger.refresh();
-  };
-
-  const tick = (now) => {
-    const p = clamp((now - start) / DUR, 0, 1);
-    const eased = 1 - Math.pow(1 - p, 3);
-    const v = Math.round(eased * 100);
-    fill.style.width = v + '%';
-    num.textContent = String(v).padStart(3, '0');
-    if (p < 1) requestAnimationFrame(tick);
-    else setTimeout(finish, 220);
-  };
-  requestAnimationFrame(tick);
-  setTimeout(finish, 3200); // safety net
-}
-
-/* --------------------------------------------------------------------------
-   03 — CUSTOM CURSOR + MAGNETIC ELEMENTS
--------------------------------------------------------------------------- */
-function initCursor() {
-  const cursor = $('.cursor');
-  if (!cursor || TOUCH) return;
-
-  const label = $('.cursor__label', cursor);
-  let x = window.innerWidth / 2, y = window.innerHeight / 2;
-  let cx = x, cy = y;
-
-  window.addEventListener('mousemove', (e) => { x = e.clientX; y = e.clientY; }, { passive: true });
-  window.addEventListener('mousedown', () => cursor.classList.add('is-down'));
-  window.addEventListener('mouseup',   () => cursor.classList.remove('is-down'));
-
-  const loop = () => {
-    cx = lerp(cx, x, 0.2);
-    cy = lerp(cy, y, 0.2);
-    cursor.style.transform = `translate3d(${cx}px, ${cy}px, 0)`;
-    requestAnimationFrame(loop);
-  };
-  requestAnimationFrame(loop);
-
-  // Cursor states from data-cursor attributes
-  const bind = (el) => {
-    const mode = el.dataset.cursor;
-    el.addEventListener('mouseenter', () => {
-      cursor.classList.remove('is-view', 'is-play', 'is-hover');
-      if (mode === 'view')  { cursor.classList.add('is-view');  label.textContent = 'View'; }
-      else if (mode === 'play') { cursor.classList.add('is-play'); label.textContent = 'Play'; }
-      else cursor.classList.add('is-hover');
+function captureI18n() {
+  $$('[data-i18n]').forEach((el) => originals.set(el, el.innerHTML));
+  $$('[data-i18n-attr]').forEach((el) => {
+    const store = {};
+    el.dataset.i18nAttr.split(',').forEach((pair) => {
+      const i = pair.indexOf(':');
+      if (i < 0) return;
+      const attr = pair.slice(0, i).trim();
+      const key = pair.slice(i + 1).trim();
+      store[attr] = { orig: el.getAttribute(attr), key };
     });
-    el.addEventListener('mouseleave', () => {
-      cursor.classList.remove('is-view', 'is-play', 'is-hover');
-      label.textContent = '';
-    });
-  };
-  $$('[data-cursor]').forEach(bind);
-  $$('a:not([data-cursor]), button:not([data-cursor])').forEach((el) => {
-    el.addEventListener('mouseenter', () => cursor.classList.add('is-hover'));
-    el.addEventListener('mouseleave', () => cursor.classList.remove('is-hover'));
+    attrOriginals.set(el, store);
   });
 }
 
-function initMagnetic() {
-  if (TOUCH) return;
-  $$('.magnetic').forEach((el) => {
-    const strength = 0.32;
-    el.addEventListener('mousemove', (e) => {
-      const r = el.getBoundingClientRect();
-      const dx = (e.clientX - (r.left + r.width / 2)) * strength;
-      const dy = (e.clientY - (r.top + r.height / 2)) * strength;
-      el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-    });
-    el.addEventListener('mouseleave', () => { el.style.transform = 'translate3d(0,0,0)'; });
-  });
+function t(key, fallback = '') {
+  if (LANG === 'ar' && AR[key]) return AR[key];
+  return fallback;
 }
 
+function applyLang(lang) {
+  LANG = lang;
+  const html = document.documentElement;
+  html.lang = lang;
+  html.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+  originals.forEach((en, el) => {
+    const key = el.dataset.i18n;
+    el.innerHTML = (lang === 'ar' && AR[key]) ? AR[key] : en;
+  });
+
+  attrOriginals.forEach((store, el) => {
+    Object.keys(store).forEach((attr) => {
+      const { orig, key } = store[attr];
+      el.setAttribute(attr, (lang === 'ar' && AR[key]) ? AR[key] : orig);
+    });
+  });
+
+  document.title = lang === 'ar' ? (AR['doc.title'] || document.title) : DOC_TITLE;
+
+  const label = $('#langLabel');
+  if (label) label.textContent = lang === 'ar' ? 'English' : 'العربية';
+  const btn = $('#langBtn');
+  if (btn) btn.setAttribute('aria-label', lang === 'ar' ? 'Switch to English' : 'التحويل إلى العربية');
+
+  if (typeof refreshModal === 'function') refreshModal();
+}
+
+const DOC_TITLE = document.title;
+
 /* --------------------------------------------------------------------------
-   04 — NAVIGATION + CINEMATIC SECTION WIPE
+   NAVIGATION
 -------------------------------------------------------------------------- */
 function initNav() {
   const nav = $('#nav');
   const burger = $('#burger');
   const menu = $('#mobileMenu');
-  const indicator = $('.nav__indicator');
   const links = $$('.nav__list a');
   const sections = ['#home', '#about', '#projects', '#skills', '#contact']
     .map((id) => $(id)).filter(Boolean);
 
-  /* --- scrolled state --- */
   const onScroll = () => {
-    nav.classList.toggle('is-stuck', window.scrollY > 60);
-    setActive();
-  };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  if (lenis) lenis.on('scroll', onScroll);
-  onScroll();
-
-  /* --- active link + animated indicator --- */
-  function setActive() {
+    nav.classList.toggle('is-stuck', window.scrollY > 40);
     const probe = window.scrollY + window.innerHeight * 0.35;
     let current = sections[0];
     sections.forEach((s) => { if (s.offsetTop <= probe) current = s; });
-    links.forEach((a) => {
-      const on = a.getAttribute('href') === '#' + current.id;
-      a.classList.toggle('is-active', on);
-      if (on && indicator) {
-        indicator.style.width = a.offsetWidth + 'px';
-        indicator.style.transform = `translateX(${a.offsetLeft}px)`;
-      }
-    });
-  }
+    links.forEach((a) => a.classList.toggle('is-active', a.getAttribute('href') === '#' + current.id));
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
 
-  /* --- mobile menu --- */
   const closeMenu = () => {
     menu.classList.remove('is-open');
     burger.classList.remove('is-open');
     burger.setAttribute('aria-expanded', 'false');
     menu.setAttribute('aria-hidden', 'true');
-    stopScroll(false);
+    document.body.style.overflow = '';
   };
   burger.addEventListener('click', () => {
     const open = !menu.classList.contains('is-open');
@@ -231,18 +304,8 @@ function initNav() {
     burger.classList.toggle('is-open', open);
     burger.setAttribute('aria-expanded', String(open));
     menu.setAttribute('aria-hidden', String(!open));
-    stopScroll(open);
+    document.body.style.overflow = open ? 'hidden' : '';
   });
-
-  /* --- cinematic wipe transition between sections --- */
-  const wipe = $('#wipe');
-  let wiping = false;
-
-  const jumpTo = (el) => {
-    if (lenis) lenis.scrollTo(el, { immediate: true });
-    else window.scrollTo({ top: el.offsetTop, behavior: 'auto' });
-    if (HAS_GSAP) ScrollTrigger.update();
-  };
 
   $$('[data-nav]').forEach((a) => {
     a.addEventListener('click', (e) => {
@@ -253,76 +316,44 @@ function initNav() {
       e.preventDefault();
       closeMenu();
       if (history.replaceState) history.replaceState(null, '', href);
-
-      if (REDUCED || wiping || !wipe) { scrollToTarget(target); return; }
-      wiping = true;
-      wipe.classList.remove('is-out');
-      wipe.classList.add('is-in');
-      setTimeout(() => {
-        jumpTo(target);
-        wipe.classList.remove('is-in');
-        wipe.classList.add('is-out');
-        setTimeout(() => {
-          wipe.classList.remove('is-out');
-          wipe.style.visibility = '';
-          wiping = false;
-        }, 520);
-      }, 430);
+      const top = target.getBoundingClientRect().top + window.scrollY - (nav.offsetHeight - 4);
+      window.scrollTo({ top, behavior: REDUCED ? 'auto' : 'smooth' });
     });
   });
-
-  window.addEventListener('resize', setActive);
 }
 
 /* --------------------------------------------------------------------------
-   05 — REVEAL SYSTEM
+   REVEALS + COUNTERS
 -------------------------------------------------------------------------- */
-function splitWords(el) {
-  if (el.dataset.split === 'done') return;
-  el.dataset.split = 'done';
-  let index = 0;
+function runCounter(el) {
+  if (el.dataset.done) return;
+  el.dataset.done = '1';
+  const target = parseInt(el.dataset.count, 10) || 0;
+  const pad = parseInt(el.dataset.pad || '2', 10);
+  const dur = REDUCED ? 1 : 1200;
+  const start = performance.now();
 
-  const wrapText = (text) => {
-    const frag = document.createDocumentFragment();
-    text.split(/(\s+)/).forEach((chunk) => {
-      if (!chunk.trim()) { frag.appendChild(document.createTextNode(chunk)); return; }
-      const w = document.createElement('span');
-      w.className = 'w';
-      const inner = document.createElement('span');
-      inner.className = 'wi';
-      inner.style.transitionDelay = Math.min(index * 55, 900) + 'ms';
-      inner.textContent = chunk;
-      index++;
-      w.appendChild(inner);
-      frag.appendChild(w);
-    });
-    return frag;
+  const step = (now) => {
+    const p = clamp((now - start) / dur, 0, 1);
+    const eased = 1 - Math.pow(1 - p, 4);
+    el.textContent = String(Math.round(eased * target)).padStart(pad, '0');
+    if (p < 1) requestAnimationFrame(step);
   };
-
-  const walk = (node) => {
-    const kids = Array.from(node.childNodes);
-    kids.forEach((child) => {
-      if (child.nodeType === 3) node.insertBefore(wrapText(child.nodeValue), child), node.removeChild(child);
-      else if (child.nodeType === 1) walk(child);
-    });
-  };
-  walk(el);
+  requestAnimationFrame(step);
 }
 
 function initReveals() {
-  const revealEls = $$('[data-reveal], [data-split], [data-reveal-lines], .sec-head, .tool, .step');
-  $$('[data-split], [data-reveal-lines]').forEach(splitWords);
-
+  const els = $$('[data-reveal]');
   if (!('IntersectionObserver' in window)) {
-    revealEls.forEach((el) => el.classList.add('is-in'));
+    els.forEach((el) => el.classList.add('is-in'));
     $$('[data-count]').forEach(runCounter);
     return;
   }
 
-  /* Masked elements (.line__in) are translated outside their clipped parent,
-     so we observe the parent instead and flag the children. */
+  /* Masked elements (.line__in) sit fully outside their clipped parent, so the
+     observer watches the parent instead and flags the children. */
   const targets = new Map();
-  revealEls.forEach((el) => {
+  els.forEach((el) => {
     const obs = (el.classList.contains('line__in') && el.parentElement) ? el.parentElement : el;
     if (!targets.has(obs)) targets.set(obs, []);
     targets.get(obs).push(el);
@@ -340,423 +371,45 @@ function initReveals() {
       (targets.get(entry.target) || [entry.target]).forEach(reveal);
       io.unobserve(entry.target);
     });
-  }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+  }, { threshold: 0.1, rootMargin: '0px 0px -5% 0px' });
 
   targets.forEach((_, obs) => io.observe(obs));
   $$('[data-count]').forEach((el) => io.observe(el));
 }
 
-function runCounter(el) {
-  if (el.dataset.done) return;
-  el.dataset.done = '1';
-  const target = parseInt(el.dataset.count, 10) || 0;
-  const pad = parseInt(el.dataset.pad || '2', 10);
-  const dur = REDUCED ? 1 : 1300;
-  const start = performance.now();
-
-  const step = (now) => {
-    const p = clamp((now - start) / dur, 0, 1);
-    const eased = 1 - Math.pow(1 - p, 4);
-    el.textContent = String(Math.round(eased * target)).padStart(pad, '0');
-    if (p < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-
 /* --------------------------------------------------------------------------
-   06 — HERO: PARALLAX, HUD TIMECODE, TIMELINE PLAYHEAD
+   VIDEO PREVIEWS (set data-src="videos/01.mp4" to enable)
 -------------------------------------------------------------------------- */
-const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+function initVideos() {
+  $$('.pv-video').forEach((video) => {
+    const src = video.dataset.src;
+    if (!src) return;
+    const host = video.closest('.p__media, .reel__media, .modal__stage') || video.parentElement;
 
-function initHeroMotion() {
-  window.addEventListener('mousemove', (e) => {
-    pointer.tx = (e.clientX / window.innerWidth) * 2 - 1;
-    pointer.ty = (e.clientY / window.innerHeight) * 2 - 1;
-  }, { passive: true });
+    const play = () => {
+      if (!video.src) video.src = src;
+      const p = video.play();
+      if (p) p.then(() => video.classList.add('is-live')).catch(() => {});
+    };
+    const stop = () => video.pause();
 
-  const studio  = $('.hero__studio');
-  const content = $('.hero__content');
-  const beams   = $('.hero__beams');
-  const playhead = $('#heroPlayhead');
-  const hudTime = $('#hudTime');
-  const timeline = $('.hero__timeline');
-  const started = performance.now();
-
-  const frame = (now) => {
-    pointer.x = lerp(pointer.x, pointer.tx, 0.06);
-    pointer.y = lerp(pointer.y, pointer.ty, 0.06);
-
-    if (!REDUCED) {
-      if (studio)  studio.style.transform  = `translate3d(${pointer.x * -18}px, ${pointer.y * -12}px, 0) scale(1.06)`;
-      if (content) content.style.transform = `translate3d(${pointer.x * 8}px, ${pointer.y * 5}px, 0)`;
-      if (beams)   beams.style.transform   = `translate3d(${pointer.x * 26}px, ${pointer.y * 10}px, 0)`;
+    if (host) {
+      host.addEventListener('mouseenter', play);
+      host.addEventListener('mouseleave', stop);
     }
-
-    // Editing playhead sweep
-    if (playhead && timeline) {
-      const w = timeline.clientWidth;
-      const gutter = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gutter')) || 40;
-      const p = ((now - started) % 16000) / 16000;
-      playhead.style.left = (gutter + p * (w - gutter * 2)) + 'px';
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver((entries) => {
+        entries.forEach((e) => (e.isIntersecting ? play() : stop()));
+      }, { threshold: 0.55 }).observe(video);
     }
-
-    // HUD running timecode (24 fps)
-    if (hudTime) {
-      const total = (now - started) / 1000;
-      const f = Math.floor((total % 1) * 24);
-      const s = Math.floor(total) % 60;
-      const m = Math.floor(total / 60) % 60;
-      const h = Math.floor(total / 3600);
-      hudTime.textContent =
-        String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' +
-        String(s).padStart(2, '0') + ':' + String(f).padStart(2, '0');
-    }
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
-}
-
-/* --------------------------------------------------------------------------
-   07 — HERO: THREE.JS VIRTUAL FILM STUDIO
--------------------------------------------------------------------------- */
-function loadThree() {
-  if (window.THREE) return Promise.resolve(window.THREE);
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'vendor/three.global.js';
-    s.onload = () => (window.THREE ? resolve(window.THREE) : reject(new Error('THREE missing')));
-    s.onerror = () => reject(new Error('three.global.js failed'));
-    document.head.appendChild(s);
-  });
-}
-
-async function initHero3D() {
-  const canvas = $('#scene');
-  if (!canvas || REDUCED) return;
-
-  let THREE = null;
-  try { THREE = await loadThree(); }
-  catch (err) { console.warn('3D scene unavailable:', err); return; }
-
-  let renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  } catch (err) { console.warn('WebGL unavailable:', err); return; }
-
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor(0x000000, 0);
-
-  const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  camera.position.set(0, 0, 9.4);
-
-  const rig = new THREE.Group();
-  scene.add(rig);
-
-  const matDark = new THREE.MeshStandardMaterial({ color: 0x171214, metalness: 0.95, roughness: 0.3 });
-  const matBlade = new THREE.MeshStandardMaterial({ color: 0x141012, metalness: 0.9, roughness: 0.38, emissive: 0x3a0508, emissiveIntensity: 0.28 });
-  const matRed = new THREE.MeshStandardMaterial({ color: 0x8B1117, emissive: 0x8B1117, emissiveIntensity: 1.15, metalness: 0.5, roughness: 0.35 });
-
-  // Lens barrel rings
-  const ringSpecs = [
-    { r: 2.75, t: 0.07, mat: matDark, rx: 0, ry: 0 },
-    { r: 2.45, t: 0.022, mat: matRed, rx: 0.22, ry: 0.1 },
-    { r: 2.15, t: 0.05, mat: matDark, rx: -0.16, ry: 0.22 },
-    { r: 1.55, t: 0.03, mat: matDark, rx: 0.3, ry: -0.18 }
-  ];
-  const rings = ringSpecs.map((s) => {
-    const m = new THREE.Mesh(new THREE.TorusGeometry(s.r, s.t, 14, 160), s.mat);
-    m.rotation.set(s.rx, s.ry, 0);
-    rig.add(m);
-    return m;
-  });
-
-  // Aperture iris (6 blades)
-  const iris = new THREE.Group();
-  for (let i = 0; i < 6; i++) {
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.5, 0.04), matBlade);
-    const a = (i / 6) * Math.PI * 2;
-    blade.position.set(Math.cos(a) * 0.78, Math.sin(a) * 0.78, 0);
-    blade.rotation.z = a + Math.PI / 2.4;
-    blade.rotation.x = 0.35;
-    iris.add(blade);
-  }
-  rig.add(iris);
-
-  // Glowing core
-  const core = new THREE.Mesh(new THREE.SphereGeometry(0.34, 32, 32), new THREE.MeshBasicMaterial({ color: 0xc21620 }));
-  rig.add(core);
-  const halo = new THREE.Mesh(
-    new THREE.RingGeometry(0.5, 1.1, 64),
-    new THREE.MeshBasicMaterial({ color: 0x8B1117, transparent: true, opacity: 0.28, side: THREE.DoubleSide })
-  );
-  rig.add(halo);
-
-  // Floating film frames
-  const frames = [];
-  const mkFrame = (w, h, color, opacity) => {
-    const geo = new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, 0.02));
-    const line = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
-    scene.add(line);
-    frames.push(line);
-    return line;
-  };
-  const f1 = mkFrame(5.6, 3.2, 0xffffff, 0.28);
-  f1.position.set(-1.4, 1.5, -2.6);
-  f1.rotation.set(0.24, 0.5, 0.1);
-  const f2 = mkFrame(4.4, 2.5, 0x8B1117, 0.55);
-  f2.position.set(2.2, -1.7, -1.4);
-  f2.rotation.set(-0.2, -0.45, -0.08);
-
-  // Film dust
-  const count = NARROW() ? 260 : 520;
-  const pos = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    pos[i * 3]     = (Math.random() - 0.5) * 18;
-    pos[i * 3 + 1] = (Math.random() - 0.5) * 12;
-    pos[i * 3 + 2] = (Math.random() - 0.5) * 10 - 2;
-  }
-  const dustGeo = new THREE.BufferGeometry();
-  dustGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
-    color: 0xffffff, size: 0.035, transparent: true, opacity: 0.5, sizeAttenuation: true
-  }));
-  scene.add(dust);
-
-  // Lighting
-  scene.add(new THREE.AmbientLight(0x3a0a0c, 1.1));
-  const key = new THREE.DirectionalLight(0xffffff, 1.5);
-  key.position.set(4, 6, 6);
-  scene.add(key);
-  const redLight = new THREE.PointLight(0xc21620, 60, 30, 2);
-  redLight.position.set(4.2, -1.4, 3.4);
-  scene.add(redLight);
-  const rim = new THREE.PointLight(0xffffff, 22, 26, 2);
-  rim.position.set(-5, 3.4, 2);
-  scene.add(rim);
-
-  // Resize
-  const resize = () => {
-    const w = canvas.clientWidth || 1;
-    const h = canvas.clientHeight || 1;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  };
-  resize();
-  window.addEventListener('resize', resize);
-
-  // Only render while hero is on screen
-  let visible = true;
-  const hero = $('.hero');
-  if ('IntersectionObserver' in window && hero) {
-    new IntersectionObserver((e) => { visible = e[0].isIntersecting; }, { threshold: 0.02 }).observe(hero);
-  }
-
-  let scrollP = 0;
-  if (HAS_GSAP) {
-    ScrollTrigger.create({
-      trigger: hero, start: 'top top', end: 'bottom top', scrub: true,
-      onUpdate: (self) => { scrollP = self.progress; }
-    });
-  }
-
-  const clock = new THREE.Clock();
-  const render = () => {
-    requestAnimationFrame(render);
-    if (!visible) return;
-    const t = clock.getElapsedTime();
-
-    rig.rotation.y = lerp(rig.rotation.y, pointer.x * 0.55 + t * 0.06 + scrollP * 1.4, 0.05);
-    rig.rotation.x = lerp(rig.rotation.x, pointer.y * 0.35 + Math.sin(t * 0.4) * 0.05 + scrollP * 0.5, 0.05);
-    rig.rotation.z = Math.sin(t * 0.25) * 0.06;
-    rig.position.y = Math.sin(t * 0.6) * 0.12 - scrollP * 1.6;
-
-    iris.rotation.z = t * 0.22;
-    core.scale.setScalar(1 + Math.sin(t * 2.2) * 0.09);
-    halo.material.opacity = 0.2 + Math.sin(t * 1.6) * 0.1;
-
-    rings[1].rotation.z = t * 0.35;
-    rings[3].rotation.z = -t * 0.28;
-
-    frames[0].rotation.y = 0.5 + Math.sin(t * 0.3) * 0.18 + pointer.x * 0.15;
-    frames[1].rotation.y = -0.45 + Math.cos(t * 0.26) * 0.16 - pointer.x * 0.12;
-    frames[0].position.y = 1.5 + Math.sin(t * 0.5) * 0.18;
-    frames[1].position.y = -1.7 + Math.cos(t * 0.44) * 0.2;
-
-    dust.rotation.y = t * 0.02 + pointer.x * 0.05;
-    dust.rotation.x = pointer.y * 0.03;
-
-    redLight.position.x = lerp(redLight.position.x, 2.4 + pointer.x * 3.4, 0.05);
-    redLight.position.y = lerp(redLight.position.y, -1.2 - pointer.y * 2.4, 0.05);
-    redLight.intensity = 55 + Math.sin(t * 3) * 8 + Math.abs(pointer.x) * 22;
-
-    camera.position.x = lerp(camera.position.x, pointer.x * 0.7, 0.05);
-    camera.position.y = lerp(camera.position.y, -pointer.y * 0.5, 0.05);
-    camera.lookAt(0, 0, 0);
-
-    renderer.render(scene, camera);
-  };
-  render();
-}
-
-/* --------------------------------------------------------------------------
-   08 — MARQUEE BANDS
--------------------------------------------------------------------------- */
-function initMarquees() {
-  const bands = $$('[data-marquee]').map((el) => ({
-    row: $('.marquee__row', el),
-    dir: parseFloat(el.dataset.speed) || 1,
-    x: 0,
-    half: 0
-  })).filter((b) => b.row);
-
-  if (!bands.length) return;
-
-  const measure = () => bands.forEach((b) => { b.half = b.row.scrollWidth / 2; });
-  measure();
-  window.addEventListener('resize', measure);
-
-  let velocity = 0, lastY = window.scrollY;
-  window.addEventListener('scroll', () => {
-    velocity = clamp(window.scrollY - lastY, -60, 60);
-    lastY = window.scrollY;
-  }, { passive: true });
-
-  const step = () => {
-    velocity *= 0.92;
-    bands.forEach((b) => {
-      if (!b.half) return;
-      b.x -= (0.55 + Math.abs(velocity) * 0.06) * b.dir;
-      if (b.x <= -b.half) b.x += b.half;
-      if (b.x >= 0) b.x -= b.half;
-      b.row.style.transform = `translate3d(${b.x}px,0,0)`;
-    });
-    requestAnimationFrame(step);
-  };
-  if (!REDUCED) requestAnimationFrame(step);
-}
-
-/* --------------------------------------------------------------------------
-   09 — FEATURED REEL
--------------------------------------------------------------------------- */
-function initReel() {
-  const reel = $('.reel');
-  const badge = $('#reelBadge');
-  if (!reel) return;
-
-  if (!TOUCH && badge) {
-    reel.addEventListener('mousemove', (e) => {
-      const r = reel.getBoundingClientRect();
-      const dx = (e.clientX - (r.left + r.width / 2)) * 0.16;
-      const dy = (e.clientY - (r.top + r.height / 2)) * 0.22;
-      badge.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.05)`;
-    });
-    reel.addEventListener('mouseleave', () => {
-      badge.style.transform = 'translate(-50%,-50%) scale(.9)';
-    });
-  }
-}
-
-/* --------------------------------------------------------------------------
-   10 — PROJECTS ARCHIVE: horizontal pin + 3D depth + hover tilt
--------------------------------------------------------------------------- */
-function initArchive() {
-  const archive = $('#archive');
-  const track = $('#archiveTrack');
-  const bar = $('#archiveProgress');
-  if (!archive || !track) return;
-
-  const cards = $$('.p', track);
-
-  /* Hover tilt (desktop only) */
-  if (!TOUCH) {
-    cards.forEach((card) => {
-      const media = $('.p__media', card);
-      if (!media) return;
-      card.addEventListener('mousemove', (e) => {
-        const r = card.getBoundingClientRect();
-        const px = (e.clientX - r.left) / r.width - 0.5;
-        const py = (e.clientY - r.top) / r.height - 0.5;
-        media.style.setProperty('--ry', (px * 12).toFixed(2) + 'deg');
-        media.style.setProperty('--rx', (py * -10).toFixed(2) + 'deg');
-      });
-      card.addEventListener('mouseleave', () => {
-        media.style.setProperty('--ry', '0deg');
-        media.style.setProperty('--rx', '0deg');
-      });
-    });
-  }
-
-  /* Depth effect based on distance from viewport centre */
-  const depth = () => {
-    if (NARROW()) return;
-    const mid = window.innerWidth / 2;
-    cards.forEach((card) => {
-      const r = card.getBoundingClientRect();
-      if (r.right < -200 || r.left > window.innerWidth + 200) return;
-      const d = ((r.left + r.width / 2) - mid) / window.innerWidth;
-      const rot = clamp(d * -10, -6, 6);
-      const sc = 1 - Math.min(Math.abs(d) * 0.12, 0.12);
-      card.style.transform = `perspective(1600px) rotateY(${rot.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
-    });
-  };
-
-  if (!HAS_GSAP) {
-    archive.classList.add('is-scroll');
-    window.addEventListener('scroll', depth, { passive: true });
-    depth();
-    return;
-  }
-
-  const distance = () => Math.max(0, track.scrollWidth - archive.clientWidth);
-  const clearCards = () => cards.forEach((c) => c.style.removeProperty('transform'));
-
-  let tween = null;
-
-  const enable = () => {
-    if (tween || NARROW()) return;
-    tween = gsap.to(track, {
-      x: () => -distance(),
-      ease: 'none',
-      scrollTrigger: {
-        trigger: archive,
-        start: 'top top',
-        end: () => '+=' + distance(),
-        pin: true,
-        scrub: 0.55,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onRefresh: depth,
-        onUpdate: (self) => {
-          if (bar) bar.style.transform = `scaleX(${self.progress})`;
-          depth();
-        }
-      }
-    });
-  };
-
-  const disable = () => {
-    if (!tween) return;
-    if (tween.scrollTrigger) tween.scrollTrigger.kill();
-    tween.kill();
-    tween = null;
-    gsap.set(track, { clearProps: 'transform' });
-    clearCards();
-    if (bar) bar.style.transform = '';
-  };
-
-  enable();
-
-  window.addEventListener('resize', () => {
-    if (NARROW()) disable(); else enable();
-    ScrollTrigger.refresh();
   });
 }
 
 /* --------------------------------------------------------------------------
-   11 — PROJECT MODAL / IMMERSIVE VIEWER
+   PROJECT MODAL
 -------------------------------------------------------------------------- */
+let refreshModal = null;
+
 function initModal() {
   const modal = $('#modal');
   if (!modal) return;
@@ -771,15 +424,16 @@ function initModal() {
   };
   let index = 0;
   let featured = false;
+  let current = null;
 
   const setVideo = (el) => {
-    const src = el?.dataset.src || '';
+    const src = (el && el.dataset.src) || '';
     if (els.video.dataset.src !== src) {
       els.video.classList.remove('is-live');
       els.video.pause();
       els.video.removeAttribute('src');
       els.video.dataset.src = src;
-      if (src) { els.video.src = src; }
+      if (src) els.video.src = src;
     }
     if (src) {
       const p = els.video.play();
@@ -787,63 +441,70 @@ function initModal() {
     }
   };
 
+  const fill = (card) => {
+    const d = card.dataset;
+    const key = d.key || '';
+    els.cat.textContent = t(key + '.category', d.category || '');
+    els.title.textContent = t(key + '.title', d.title || '');
+    els.desc.textContent = t(key + '.desc', d.desc || '');
+    els.role.textContent = t(key + '.role', d.role || '—');
+    els.year.textContent = d.year || '—';
+    els.dur.textContent = d.duration || '—';
+    els.fmt.textContent = d.format || '—';
+    setVideo($('video', card));
+  };
+
   const render = (i) => {
     const card = projects[i];
     if (!card) return;
     index = i;
-    const d = card.dataset;
+    current = card;
+    featured = false;
     const num = String(i + 1).padStart(2, '0');
     els.idx.textContent = num;
     els.now.textContent = num;
-    els.cat.textContent = d.category || '';
-    els.title.textContent = d.title || '';
-    els.desc.textContent = d.desc || '';
-    els.year.textContent = d.year || '—';
-    els.role.textContent = d.role || '—';
-    els.dur.textContent = d.duration || '—';
-    els.fmt.textContent = d.format || '—';
     els.phNum.textContent = num;
-    setVideo($('video', card));
+    els.count.style.visibility = 'visible';
+    fill(card);
+  };
+
+  const renderFeatured = (card) => {
+    current = card;
+    featured = true;
+    els.idx.textContent = '★';
+    els.now.textContent = t('reel.count', 'REEL');
+    els.phNum.textContent = '★';
+    els.count.style.visibility = 'hidden';
+    fill(card);
   };
 
   const open = (card) => {
-    featured = card.classList.contains('reel');
-    if (featured) {
-      const d = card.dataset;
-      els.idx.textContent = '★';
-      els.now.textContent = 'REEL';
-      els.cat.textContent = d.category || 'Featured';
-      els.title.textContent = d.title || 'The Reel';
-      els.desc.textContent = d.desc || '';
-      els.year.textContent = d.year || '—';
-      els.role.textContent = d.role || '—';
-      els.dur.textContent = d.duration || '—';
-      els.fmt.textContent = d.format || '—';
-      els.phNum.textContent = '★';
-      setVideo($('video', card));
-    } else {
-      render(projects.indexOf(card));
-    }
-    els.count.style.visibility = featured ? 'hidden' : 'visible';
+    if (card.classList.contains('reel')) renderFeatured(card);
+    else render(projects.indexOf(card));
 
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
-    stopScroll(true);
-    setTimeout(() => els.close.focus(), 600);
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => els.close.focus(), 300);
   };
 
   const close = () => {
     modal.classList.remove('is-open');
     modal.setAttribute('aria-hidden', 'true');
     els.video.pause();
-    stopScroll(false);
+    document.body.style.overflow = '';
   };
 
-  /* open triggers */
+  refreshModal = () => {
+    if (!modal.classList.contains('is-open') || !current) return;
+    if (featured) renderFeatured(current);
+    else render(index);
+  };
+
   $$('.p, [data-project]').forEach((card) => {
-    card.addEventListener('click', () => open(card));
     card.setAttribute('tabindex', '0');
     card.setAttribute('role', 'button');
+    card.addEventListener('click', () => open(card));
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(card); }
     });
@@ -858,180 +519,31 @@ function initModal() {
     if (!modal.classList.contains('is-open')) return;
     if (e.key === 'Escape') close();
     if (featured) return;
-    if (e.key === 'ArrowLeft')  render((index - 1 + projects.length) % projects.length);
+    if (e.key === 'ArrowLeft') render((index - 1 + projects.length) % projects.length);
     if (e.key === 'ArrowRight') render((index + 1) % projects.length);
   });
-}
-
-/* --------------------------------------------------------------------------
-   12 — VIDEO PREVIEWS (set data-src="videos/01.mp4" to enable)
--------------------------------------------------------------------------- */
-function initVideos() {
-  $$('.pv-video').forEach((video) => {
-    const src = video.dataset.src;
-    if (!src) return;
-    const host = video.closest('.p__media, .reel__media, .modal__stage') || video.parentElement;
-
-    const play = () => {
-      if (!video.src) video.src = src;
-      const p = video.play();
-      if (p) p.then(() => video.classList.add('is-live')).catch(() => {});
-    };
-    const stop = () => { video.pause(); };
-
-    if (host) {
-      host.addEventListener('mouseenter', play);
-      host.addEventListener('mouseleave', stop);
-    }
-
-    // Autoplay muted loops when their card enters the viewport
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver((entries) => {
-        entries.forEach((e) => e.isIntersecting ? play() : stop());
-      }, { threshold: 0.55 }).observe(video);
-    }
-  });
-}
-
-/* --------------------------------------------------------------------------
-   13 — PROCESS TIMELINE PROGRESS
--------------------------------------------------------------------------- */
-function initTimeline() {
-  const timeline = $('#timeline');
-  const fill = $('#timelineFill');
-  if (!timeline || !fill || !HAS_GSAP) return;
-
-  ScrollTrigger.create({
-    trigger: timeline,
-    start: 'top 78%',
-    end: 'bottom 62%',
-    onUpdate: (self) => {
-      fill.style.transform = NARROW()
-        ? `scaleY(${self.progress})`
-        : `scaleX(${self.progress})`;
-    },
-    onRefresh: (self) => {
-      fill.style.transform = NARROW()
-        ? `scaleY(${self.progress})`
-        : `scaleX(${self.progress})`;
-    }
-  });
-
-  /* Small cinematic elements travelling with the scroll */
-  if (!REDUCED) {
-    $$('.step__marker', timeline).forEach((m, i) => {
-      gsap.fromTo(m, { xPercent: -40 }, {
-        xPercent: 40, ease: 'none',
-        scrollTrigger: { trigger: timeline, start: 'top bottom', end: 'bottom top', scrub: 1 + i * 0.2 }
-      });
-    });
-  }
-}
-
-/* --------------------------------------------------------------------------
-   14 — SKILLS: INTERACTIVE EDITING TIMELINE
--------------------------------------------------------------------------- */
-function initNLE() {
-  const nle = $('#nle');
-  const head = $('#nlePlayhead');
-  const tc = $('#nleTc');
-  const ruler = $('#nleRuler');
-  if (!nle || !head) return;
-
-  // Build ruler ticks
-  if (ruler) {
-    ruler.style.background =
-      'repeating-linear-gradient(90deg, rgba(255,255,255,.3) 0 1px, transparent 1px 26px)';
-  }
-
-  const DURATION = 96; // seconds shown on the timeline
-  const fmt = (sec) => {
-    const s = Math.max(0, Math.min(DURATION, sec));
-    const m = Math.floor(s / 60);
-    const ss = Math.floor(s % 60);
-    const f = Math.floor((s % 1) * 24);
-    return `00:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}:${String(f).padStart(2, '0')}`;
-  };
-
-  const move = (clientX) => {
-    const r = nle.getBoundingClientRect();
-    const x = clamp(clientX - r.left, 0, r.width);
-    head.style.left = x + 'px';
-    if (tc) tc.textContent = fmt((x / r.width) * DURATION);
-  };
-
-  nle.addEventListener('mousemove', (e) => move(e.clientX), { passive: true });
-  nle.addEventListener('touchmove', (e) => { if (e.touches[0]) move(e.touches[0].clientX); }, { passive: true });
-
-  nle.addEventListener('mouseleave', () => {
-    const r = nle.getBoundingClientRect();
-    head.style.left = (r.width * 0.34) + 'px';
-    if (tc) tc.textContent = fmt(DURATION * 0.34);
-  });
-
-  const r0 = nle.getBoundingClientRect();
-  head.style.left = (r0.width * 0.34) + 'px';
-  if (tc) tc.textContent = fmt(DURATION * 0.34);
-}
-
-/* --------------------------------------------------------------------------
-   15 — PAGE TIMECODE + SCROLL PROGRESS
--------------------------------------------------------------------------- */
-function initProgress() {
-  const fill = $('.scrollbar__fill');
-  const tc = $('#timecode');
-  const RUNTIME = 90; // seconds of "reel" mapped across the page
-
-  const update = () => {
-    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    const p = clamp(window.scrollY / max, 0, 1);
-    if (fill) fill.style.transform = `scaleX(${p})`;
-    if (tc) {
-      tc.classList.toggle('is-on', window.scrollY > window.innerHeight * 0.75);
-      const s = p * RUNTIME;
-      const mm = String(Math.floor(s / 60)).padStart(2, '0');
-      const ss = String(Math.floor(s % 60)).padStart(2, '0');
-      const ff = String(Math.floor((s % 1) * 24)).padStart(2, '0');
-      tc.textContent = `00:${mm}:${ss}:${ff}`;
-    }
-  };
-
-  window.addEventListener('scroll', update, { passive: true });
-  window.addEventListener('resize', update);
-  if (lenis) lenis.on('scroll', update);
-  update();
 }
 
 /* --------------------------------------------------------------------------
    BOOT
 -------------------------------------------------------------------------- */
 function boot() {
-  initScroll();
-  initLoader();
-  window.__ziadBooted = true;
-  initCursor();
-  initMagnetic();
+  captureI18n();
+  applyLang('en');
+
   initNav();
   initReveals();
-  initHeroMotion();
-  initMarquees();
-  initReel();
-  initArchive();
-  initModal();
   initVideos();
-  initTimeline();
-  initNLE();
-  initProgress();
+  initModal();
 
-  const idle = window.requestIdleCallback
-    ? (fn) => window.requestIdleCallback(fn, { timeout: 1500 })
-    : (fn) => setTimeout(fn, 300);
-  idle(initHero3D);
+  const langBtn = $('#langBtn');
+  if (langBtn) langBtn.addEventListener('click', () => applyLang(LANG === 'en' ? 'ar' : 'en'));
 
-  if (HAS_GSAP) {
-    window.addEventListener('load', () => ScrollTrigger.refresh());
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ScrollTrigger.refresh());
-  }
+  window.__ziadBooted = true;
+  setTimeout(() => {
+    const hero = $('.hero');
+    if (hero) hero.classList.add('is-ready');
+  }, 120);
 }
 
 boot();
